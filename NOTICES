@@ -1,0 +1,15 @@
+NOTICES
+=======
+
+This project includes code derived from the following:
+
+esp-web-tools
+  https://github.com/esphome/esp-web-tools
+  Copyright Home Assistant
+  Licensed under the Apache License, Version 2.0
+
+  Specifically, v3/detect.js contains hardware detection logic ported from
+  Pull Request #690 (src/util/build-match.ts, src/diagnostics-dialog.ts).
+
+  You may obtain a copy of the License at:
+  https://www.apache.org/licenses/LICENSE-2.0

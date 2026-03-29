@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0a0a0a">
+  <link rel="shortcut icon" href="../favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400&family=Outfit:wght@300;400;500;600;700&family=Oxanium:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="style.css">
+  <title>WLED Web Installer</title>
+</head>
+<body>
+
+  <header>
+    <img alt="WLED" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAG0AAAAfCAMAAADazLOuAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAABLUExURQAAAAB81gCU/zKq///mo7sWMN8bO+ZIYtZaAP9rAP+HMsCiG+TAIOnMS0KqNU7KPnLUZOrq6v///4CAgGhoaL+/v6CgoExMTAAAAAlm4O8AAAAZdFJOU////////////////////////////////wABNAq3AAAACXBIWXMAAA7DAAAOwwHHb6hkAAACN0lEQVRIS73VjVLCMBAEYIr8CYKkrdj3f1J37zaXFCpTO+piaDgbPq9px9VQ0qyrvKj4q6m0Zr1h+M7xF1zRmnWzqV9/0d2jttGotO1uv9dUObwej5oqp7fzWVPl8n69aprzoOUUbbvdIbV3OLwitXc6vSG1d7m8I3feSEN0j2CeNbOY4MxigjOLCc4sZsTV2l1cCyy4wIILLLjAxtykltq2rbTU+qi01N5rXNO2leaFORoija2l5MM5a02ac9Ya16Sk5tgaPrUpjZub0BL6YqSxKwbH77XUUmSkJXSl8QtaMuyJhq5maL5nTKVpZC13VmtMpTFT2g4vJjTuGfMzzXftiUZnhdtgb1xofvypRon5TjNnxYN9zJo6K5ruSIzQtGuVZn0x91rKvdHBvm39E7SyZ4y06Gz8BDBFKzsXmhcwyfsGZ9VpbhoiCinaxPNmGWmWWrNU2jB0q6HvOhN1JUtCixQtp2g51ZVUXILS2RMAD++T2nY/DrDjOMDO4wC7jmNYj3d73nrXug8Yt9uNB8xNU1cKNXWlUFNXCjV1pZhGTE83m2vWfYf/NGj4Bg1zu5JD3/MnH5ZWfLOksbmGWGjgXMN5/C2GXYGFFW9Nmtle6Xut0Gm+JsayCj8z0nhjGvYJzVf4aSzmNYsr+u7Q2JIdoX3YOQjOslmsW1jJ3120nE9gfo79hTaNdcsqVR610lvO47pllae9ReZ805zKo2a3iaY5c75pTmVCA6dJ5H7N0sr/asPwBehb7ifEhusRAAAAAElFTkSuQmCC">
+    <h1>Web Installer <span class="version-badge">v3</span></h1>
+    <p>Automatic hardware detection &mdash; plug in, click, done.</p>
+  </header>
+
+  <main>
+    <!-- Unsupported browser fallback -->
+    <div id="unsupported" hidden>
+      <div class="card">
+        <h2>Browser Not Supported</h2>
+        <p>Web Serial API is required. Please use <strong>Chrome</strong> or <strong>Edge</strong> on desktop.</p>
+        <p>You can still download firmware manually:</p>
+        <a href="https://github.com/Aircoookie/WLED/releases" target="_blank">
+          <button class="btn primary">GitHub Releases</button>
+        </a>
+      </div>
+    </div>
+
+    <div id="installer">
+      <!-- Step 1: Connect -->
+      <section id="connect-section" class="card">
+        <h2>Connect Your Device</h2>
+        <p>Plug in your ESP board via USB, then click Connect.</p>
+        <button id="connect-btn" class="btn primary">Connect</button>
+        <pre id="detect-log" hidden></pre>
+      </section>
+
+      <!-- Step 2: Detection results -->
+      <section id="detect-section" class="card" hidden>
+        <div class="detect-header">
+          <div>
+            <h2 id="hw-chip">&mdash;</h2>
+            <div class="detect-header-specs">
+              <span id="hw-flash">&mdash;</span>
+              <span class="detect-header-sep"></span>
+              <span id="hw-psram">&mdash;</span>
+              <span class="detect-header-sep"></span>
+              <span id="hw-mac">&mdash;</span>
+            </div>
+          </div>
+          <div class="ci-badge">
+            <span class="ci-dot"></span>
+            <span>Connected</span>
+          </div>
+        </div>
+
+        <div id="reconnect-bar" class="reconnect-bar" hidden>
+          <span>Device disconnected</span>
+          <button id="reconnect-btn" class="btn primary reconnect-btn">Reconnect</button>
+        </div>
+
+        <div id="matching-boards" class="matching-boards"></div>
+
+        <!-- Install (always visible) -->
+        <div class="install-hero">
+          <button id="install-btn" class="install-btn">Install WLED</button>
+          <p class="install-note">Installs <strong id="fw-name">&mdash;</strong></p>
+        </div>
+        <div id="flash-progress" hidden>
+          <div class="progress-track">
+            <div id="flash-progress-bar" class="progress-bar"></div>
+          </div>
+          <p id="flash-progress-text">Preparing...</p>
+        </div>
+        <details class="install-options">
+          <summary>Options</summary>
+          <div class="install-options-body">
+            <div id="version-row">
+              <label for="version-select">Version</label>
+              <select id="version-select" class="select"></select>
+            </div>
+            <label class="erase-option">
+              <input type="checkbox" id="erase-checkbox">
+              <span>Erase device before installing</span>
+            </label>
+          </div>
+        </details>
+
+        <!-- WiFi Setup -->
+        <details id="section-configure" class="flow-section">
+          <summary>WiFi Setup</summary>
+          <div class="flow-section-body">
+            <p class="pane-hint">Configure WiFi on your WLED device. The device must have WLED installed and running.</p>
+            <form class="wifi-form" autocomplete="off">
+              <div class="form-group">
+                <label for="wifi-ssid">WiFi Network</label>
+                <input type="text" id="wifi-ssid" class="form-input" placeholder="SSID">
+              </div>
+              <div class="form-group">
+                <label for="wifi-password">Password</label>
+                <input type="password" id="wifi-password" class="form-input" placeholder="Password">
+              </div>
+              <button id="wifi-save-btn" type="submit" class="btn primary">Connect to WiFi</button>
+            </form>
+            <p id="wifi-status" class="wifi-status" hidden></p>
+            <div id="visit-device" hidden>
+              <a id="visit-device-link" class="btn primary visit-btn" href="#" target="_blank">Visit Device</a>
+            </div>
+          </div>
+        </details>
+
+        <!-- Logs / Diagnostics -->
+        <details id="section-logs" class="flow-section">
+          <summary>Logs / Diagnostics</summary>
+          <div class="flow-section-body">
+            <div class="logs-toolbar">
+              <button id="reset-device-btn" class="btn action-btn">Reset Device</button>
+              <button id="erase-btn" class="btn action-btn">Erase Device</button>
+              <button id="clear-logs-btn" class="btn action-btn">Clear</button>
+              <button id="copy-logs-btn" class="btn action-btn">Copy Logs</button>
+              <button id="stop-logs-btn" class="btn action-btn">Stop Logging</button>
+            </div>
+            <div id="logs-status" class="logs-status" hidden>
+              <span class="logs-status-dot"></span>
+              <span id="logs-status-text">Connected, waiting for logs...</span>
+            </div>
+            <pre id="serial-output"></pre>
+            <p id="logs-hint" class="logs-hint">No output is normal — you might have to reset the device to see output.</p>
+          </div>
+        </details>
+
+      </section>
+
+      <!-- Error state -->
+      <section id="error-section" class="card" hidden>
+        <h2>Connection Error</h2>
+        <p id="error-message"></p>
+        <button id="retry-btn" class="btn primary">Try Again</button>
+        <details id="troubleshooting">
+          <summary>Troubleshooting</summary>
+          <div class="troubleshooting-body">
+            <h4>No device found?</h4>
+            <p>You might need USB-to-serial drivers for your board:</p>
+            <a href="https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers" target="_blank">CP2102 driver (square chip)</a>
+            <a href="https://github.com/nodemcu/nodemcu-devkit/tree/master/Drivers" target="_blank">CH34x driver (rectangular chip)</a>
+            <p>Make sure your USB cable supports data transfer (not charge-only).</p>
+
+            <h4>Install failing or device stuck in a boot loop?</h4>
+            <p>Some boards require you to hold the <strong>BOOT</strong> button while plugging in the USB cable (or while clicking Connect) to enter flashing mode. Release the button once the connection starts.</p>
+          </div>
+        </details>
+      </section>
+    </div>
+
+    <!-- Board database -->
+    <details id="board-database" class="board-database">
+      <summary>Board Database</summary>
+      <div class="board-database-body">
+        <input type="text" id="board-search" class="search-input" placeholder="Search boards...">
+        <div id="board-filters">
+          <button class="filter-btn active" data-chip="all">All</button>
+          <button class="filter-btn" data-chip="ESP32">ESP32</button>
+          <button class="filter-btn" data-chip="ESP32-S3">S3</button>
+          <button class="filter-btn" data-chip="ESP32-S2">S2</button>
+          <button class="filter-btn" data-chip="ESP32-C3">C3</button>
+          <button class="filter-btn" data-chip="ESP8266">8266</button>
+        </div>
+        <div id="board-list"></div>
+      </div>
+    </details>
+  </main>
+
+  <footer>
+    <p>Powered by <a href="https://github.com/niccokunzmann/esptool-js" target="_blank">esptool-js</a></p>
+    <p>CORS proxy by <a href="https://corsfix.com" target="_blank">Corsfix</a></p>
+    <p>
+      <a href="https://github.com/Aircoookie/WLED" target="_blank">GitHub</a>
+      &middot; <a href="https://kno.wled.ge" target="_blank">kno.wled.ge</a>
+      &middot; <a href="../index.htm">Classic Installer</a>
+    </p>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
